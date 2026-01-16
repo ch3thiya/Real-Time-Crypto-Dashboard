@@ -10,7 +10,7 @@ def run_scraper():
         sys.exit(1)
 
     url = "https://api.coingecko.com/api/v3/simple/price"
-    params = {'ids': 'bitcoin,ethereum,solana,litecoin', 'vs_currencies': 'usd', 'include_market_cap': 'true', 'include_24hr_change': 'true'}
+    params = {'ids': 'binancecoin,ethereum,solana,litecoin', 'vs_currencies': 'usd', 'include_market_cap': 'true', 'include_24hr_change': 'true'}
     headers = {"accept": "application/json", "x-cg-demo-api-key": API_KEY if API_KEY else ""}
     
     resp = requests.get(url, params=params, headers=headers)
