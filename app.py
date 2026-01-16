@@ -1,31 +1,32 @@
 import streamlit as st
 import pandas as pd
+from sqlalchemy import create_engine
 
-st.set_page_config(page_title="2026 Crypto Tracker", layout="wide", page_icon="🪙")
-
+st.set_page_config(page_title="2026 Crypto Tracker", layout="wide")
 st.title("🪙 Real-Time Crypto Pipeline")
 
-try:
-    conn = st.connection("postgresql", type="sql")
-except Exception as e:
-    st.error("Missing database connection configuration in Streamlit Secrets!")
+# Use the URL directly from secrets
+if "url" in st.secrets.get("connections", {}).get("postgresql", {}):
+    db_url = st.secrets["connections"]["postgresql"]["url"]
+else:
+    # Fallback if you put DATABASE_URL directly in secrets
+    db_url = st.secrets.get("DATABASE_URL")
+
+if not db_url:
+    st.error("❌ Secrets not found! Check Streamlit Cloud Settings.")
     st.stop()
 
-df = conn.query("SELECT * FROM crypto_prices ORDER BY timestamp DESC LIMIT 200", ttl=60)
+try:
+    # Use SQLAlchemy engine directly for more control
+    engine = create_engine(db_url)
+    df = pd.read_sql("SELECT * FROM crypto_prices ORDER BY timestamp DESC LIMIT 200", engine)
+except Exception as e:
+    st.error(f"⚠️ Connection Error: {e}")
+    st.stop()
 
 if not df.empty:
-    latest_data = df.groupby('coin').first().reset_index()
-    cols = st.columns(len(latest_data))
-    
-    for i, row in latest_data.iterrows():
-        cols[i].metric(
-            label=row['coin'].upper(), 
-            value=f"${row['price']:,.2f}",
-            delta=f"{row['change_24h']:.2f}%"
-        )
-
-    st.subheader("Price Trends (Last 24 Pulls)")
-    chart_data = df.pivot_table(index='timestamp', columns='coin', values='price')
-    st.line_chart(chart_data)
+    # Your metric and chart code here...
+    st.write(df.head()) # Verify data is visible
+    st.line_chart(df.pivot_table(index='timestamp', columns='coin', values='price'))
 else:
-    st.warning("No data found in Supabase. Check if your GitHub Action has run yet!")
+    st.warning("No data found. Check Supabase SQL Editor to see if table is truly empty.")

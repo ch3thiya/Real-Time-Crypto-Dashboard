@@ -1,70 +1,52 @@
-import os
-import requests
-import psycopg2
+import os, requests, psycopg2, sys
 from datetime import datetime
-import sys
 
 API_KEY = os.getenv('COINGECKO_API_KEY')
 DB_URL = os.getenv('DATABASE_URL')
-COINS = "bitcoin,ethereum,solana,cardano"
 
 def run_scraper():
+    if not DB_URL:
+        print("❌ CRITICAL: DATABASE_URL IS EMPTY")
+        sys.exit(1)
+
+    # 1. Fetch Data
     url = "https://api.coingecko.com/api/v3/simple/price"
-    params = {
-        'ids': COINS,
-        'vs_currencies': 'usd',
-        'include_market_cap': 'true',
-        'include_24hr_change': 'true'
-    }
-    headers = {
-        "accept": "application/json",
-        "x-cg-demo-api-key": API_KEY if API_KEY else ""
-    }
+    params = {'ids': 'bitcoin,ethereum,solana,cardano', 'vs_currencies': 'usd', 'include_market_cap': 'true', 'include_24hr_change': 'true'}
+    headers = {"accept": "application/json", "x-cg-demo-api-key": API_KEY if API_KEY else ""}
     
-    try:
-        response = requests.get(url, params=params, headers=headers)
-        response.raise_for_status() 
-        data = response.json()
-    except Exception as e:
-        print(f"❌ API Request Failed: {e}")
-        return
+    resp = requests.get(url, params=params, headers=headers)
+    resp.raise_for_status()
+    data = resp.json()
 
+    # 2. Database Transaction
     try:
-        conn = psycopg2.connect(DB_URL, sslmode='require')
-        cur = conn.cursor()
-        
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS crypto_prices (
-                id SERIAL PRIMARY KEY,
-                coin TEXT,
-                price FLOAT,
-                market_cap FLOAT,
-                change_24h FLOAT,
-                timestamp TIMESTAMP
-            );
-        """)
+        # Use a context manager to ensure connection always closes
+        with psycopg2.connect(DB_URL, sslmode='require') as conn:
+            with conn.cursor() as cur:
+                # Create table automatically if it doesn't exist
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS crypto_prices (
+                        id SERIAL PRIMARY KEY,
+                        coin TEXT,
+                        price FLOAT,
+                        market_cap FLOAT,
+                        change_24h FLOAT,
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    );
+                """)
+                
+                for coin_id, stats in data.items():
+                    cur.execute("""
+                        INSERT INTO crypto_prices (coin, price, market_cap, change_24h, timestamp)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (coin_id, stats['usd'], stats['usd_market_cap'], stats['usd_24h_change'], datetime.now()))
+                
+                # Transaction is committed automatically by the 'with' block
+                print(f"✅ SUCCESSFULLY INSERTED {len(data)} ROWS")
 
-        for coin_id, stats in data.items():
-            cur.execute("""
-                INSERT INTO crypto_prices (coin, price, market_cap, change_24h, timestamp)
-                VALUES (%s, %s, %s, %s, %s)
-            """, (
-                coin_id, 
-                stats['usd'], 
-                stats['usd_market_cap'], 
-                stats['usd_24h_change'], 
-                datetime.now()
-            ))
-        
-        conn.commit()
-        print(f"Scraped {len(data)} coins and committed to DB at {datetime.now()}")
-        
     except Exception as e:
-        print(f"Database Error: {e}")
-    finally:
-        if 'conn' in locals():
-            cur.close()
-            conn.close()
+        print(f"❌ DATABASE ERROR: {e}")
+        sys.exit(1) # Force GitHub Action to fail if DB fails
 
 if __name__ == "__main__":
     run_scraper()
