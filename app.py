@@ -6,10 +6,9 @@ st.set_page_config(page_title="2026 Crypto Tracker", layout="wide", page_icon="ð
 st.title("ðŸª™ Real-Time Crypto Pipeline")
 
 try:
-    db_url = st.secrets["DATABASE_URL"]
-    conn = st.connection("postgresql", type="sql", url=db_url)
+    conn = st.connection("postgresql", type="sql")
 except Exception as e:
-    st.error("Could not find DATABASE_URL in secrets!")
+    st.error("Missing database connection configuration in Streamlit Secrets!")
     st.stop()
 
 df = conn.query("SELECT * FROM crypto_prices ORDER BY timestamp DESC LIMIT 200", ttl=60)
