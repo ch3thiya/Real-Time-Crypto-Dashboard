@@ -5,11 +5,9 @@ from sqlalchemy import create_engine
 st.set_page_config(page_title="2026 Crypto Tracker", layout="wide")
 st.title("🪙 Real-Time Crypto Pipeline")
 
-# Use the URL directly from secrets
 if "url" in st.secrets.get("connections", {}).get("postgresql", {}):
     db_url = st.secrets["connections"]["postgresql"]["url"]
 else:
-    # Fallback if you put DATABASE_URL directly in secrets
     db_url = st.secrets.get("DATABASE_URL")
 
 if not db_url:
@@ -17,7 +15,6 @@ if not db_url:
     st.stop()
 
 try:
-    # Use SQLAlchemy engine directly for more control
     engine = create_engine(db_url)
     df = pd.read_sql("SELECT * FROM crypto_prices ORDER BY timestamp DESC LIMIT 200", engine)
 except Exception as e:
@@ -25,8 +22,7 @@ except Exception as e:
     st.stop()
 
 if not df.empty:
-    # Your metric and chart code here...
-    st.write(df.head()) # Verify data is visible
+    st.write(df.head()) 
     st.line_chart(df.pivot_table(index='timestamp', columns='coin', values='price'))
 else:
     st.warning("No data found. Check Supabase SQL Editor to see if table is truly empty.")

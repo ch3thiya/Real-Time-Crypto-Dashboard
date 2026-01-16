@@ -6,24 +6,20 @@ DB_URL = os.getenv('DATABASE_URL')
 
 def run_scraper():
     if not DB_URL:
-        print("❌ CRITICAL: DATABASE_URL IS EMPTY")
+        print("CRITICAL: DATABASE_URL IS EMPTY")
         sys.exit(1)
 
-    # 1. Fetch Data
     url = "https://api.coingecko.com/api/v3/simple/price"
-    params = {'ids': 'bitcoin,ethereum,solana,cardano', 'vs_currencies': 'usd', 'include_market_cap': 'true', 'include_24hr_change': 'true'}
+    params = {'ids': 'bitcoin,ethereum,solana,litecoin', 'vs_currencies': 'usd', 'include_market_cap': 'true', 'include_24hr_change': 'true'}
     headers = {"accept": "application/json", "x-cg-demo-api-key": API_KEY if API_KEY else ""}
     
     resp = requests.get(url, params=params, headers=headers)
     resp.raise_for_status()
     data = resp.json()
 
-    # 2. Database Transaction
     try:
-        # Use a context manager to ensure connection always closes
         with psycopg2.connect(DB_URL, sslmode='require') as conn:
             with conn.cursor() as cur:
-                # Create table automatically if it doesn't exist
                 cur.execute("""
                     CREATE TABLE IF NOT EXISTS crypto_prices (
                         id SERIAL PRIMARY KEY,
@@ -41,12 +37,11 @@ def run_scraper():
                         VALUES (%s, %s, %s, %s, %s)
                     """, (coin_id, stats['usd'], stats['usd_market_cap'], stats['usd_24h_change'], datetime.now()))
                 
-                # Transaction is committed automatically by the 'with' block
-                print(f"✅ SUCCESSFULLY INSERTED {len(data)} ROWS")
+                print(f"SUCCESSFULLY INSERTED {len(data)} ROWS")
 
     except Exception as e:
-        print(f"❌ DATABASE ERROR: {e}")
-        sys.exit(1) # Force GitHub Action to fail if DB fails
+        print(f"DATABASE ERROR: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     run_scraper()
