@@ -1,7 +1,4 @@
-- name: Run Scraper
-    env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
+name: Run Scraper
 
 on:
   schedule:
