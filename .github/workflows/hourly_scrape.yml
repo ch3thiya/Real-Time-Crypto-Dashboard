@@ -1,4 +1,4 @@
-name: Run Scraper
+name: Hourly Crypto Scrape
 
 on:
   schedule:
@@ -24,4 +24,4 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           COINGECKO_API_KEY: ${{ secrets.COINGECKO_API_KEY }}
-        run: python main.py 
+        run: python main.py
