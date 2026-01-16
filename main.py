@@ -33,6 +33,17 @@ def run_scraper():
         conn = psycopg2.connect(DB_URL, sslmode='require')
         cur = conn.cursor()
         
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS crypto_prices (
+                id SERIAL PRIMARY KEY,
+                coin TEXT,
+                price FLOAT,
+                market_cap FLOAT,
+                change_24h FLOAT,
+                timestamp TIMESTAMP
+            );
+        """)
+
         for coin_id, stats in data.items():
             cur.execute("""
                 INSERT INTO crypto_prices (coin, price, market_cap, change_24h, timestamp)
@@ -46,7 +57,7 @@ def run_scraper():
             ))
         
         conn.commit()
-        print(f"Scraped {len(data)} coins at {datetime.now()}")
+        print(f"Scraped {len(data)} coins and committed to DB at {datetime.now()}")
         
     except Exception as e:
         print(f"Database Error: {e}")
