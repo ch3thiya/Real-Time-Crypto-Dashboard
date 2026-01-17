@@ -1,7 +1,6 @@
 # Real Time Cryptocurrency Data Pipeline & Live Dashboard
 
-A fully autonomous, serverless ETL pipeline that ingests, stores, and visualizes high frequency cryptocurrency market data.
-[Dashboard](https://crypto-dashboard-ch3thiya.streamlit.app/)
+A fully autonomous, serverless ETL pipeline that ingests, stores, and visualizes high frequency cryptocurrency market data.   [Dashboard](https://crypto-dashboard-ch3thiya.streamlit.app/)
 
 ## Overview
 
