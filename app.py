@@ -48,7 +48,7 @@ if not df.empty:
             )
 
     st.divider()
-    st.subheader("Coin Fluctuations (Detailed View)")
+    st.subheader("Coin Fluctuations")
 
     chart_cols = st.columns(4, gap="large")
     coins = sorted(df['coin'].unique())
