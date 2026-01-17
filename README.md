@@ -1,4 +1,4 @@
-# Real-Time Cryptocurrency Data Pipeline & Live Dashboard
+# Real Time Cryptocurrency Data Pipeline & Live Dashboard
 
 A fully autonomous, serverless ETL pipeline that ingests, stores, and visualizes high frequency cryptocurrency market data.
 [Dashboard](https://crypto-dashboard-ch3thiya.streamlit.app/)
@@ -16,7 +16,7 @@ Rather than just building a dashboard, this project focuses on core Data Enginee
 - **Data Integrity:** Aligning microsecond timestamps for accurate time series analysis  
 - **Persistence:** Transitioning from ephemeral data to a persistent PostgreSQL warehouse  
 
-## 🏗️ Architecture & Data Flow
+## Architecture & Data Flow
 
 The system is built on a modular, zero maintenance stack:
 
@@ -26,7 +26,7 @@ The system is built on a modular, zero maintenance stack:
 - **Processing:** Data cleaning and timestamp normalization using Pandas  
 - **Visualization:** Streamlit dashboard with Altair charts and non zero Y axis scaling  
 
-## 🛠️ Setup Guide
+## Setup Guide
 
 ### Prerequisites
 
@@ -77,7 +77,7 @@ You can manually trigger it from the GitHub Actions tab.
 url = "your_supabase_pooler_url"
 ```
 
-## 📈 Technical Challenges
+## Technical Challenges
 
 ### IPv6 Networking Wall
 GitHub Actions runs on IPv4 while many databases default to IPv6. This was resolved using Supavisor, which provides an IPv4-compatible endpoint.
