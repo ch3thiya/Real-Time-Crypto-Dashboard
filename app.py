@@ -6,43 +6,53 @@ st.title("🪙 Real-Time Crypto Pipeline")
 
 try:
     conn = st.connection("postgresql", type="sql")
-    # Fetch 100 rows to ensure we have at least 2 pulls for each of the 4 coins
-    df = conn.query("SELECT * FROM crypto_prices ORDER BY timestamp DESC LIMIT 100", ttl=10)
+    # Pull enough data for history (4 coins * 24 hours = ~100 rows)
+    df = conn.query("SELECT * FROM crypto_prices ORDER BY timestamp DESC LIMIT 200", ttl=10)
 except Exception as e:
-    st.error(f"Database connection failed: {e}")
+    st.error(f"Database error: {e}")
     st.stop()
 
-if not df.empty and len(df) > 4:
+if not df.empty:
+    # 1. Align Data Types
+    df['price'] = pd.to_numeric(df['price'], errors='coerce')
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     
-    # Sort and group to get the latest and previous data points
-    # We use .first() and .nth(1) to get the two most recent pulls
-    sorted_df = df.sort_values('timestamp', ascending=False)
-    latest_pull = sorted_df.groupby('coin').first()
-    previous_pull = sorted_df.groupby('coin').nth(1)
+    # 2. CRITICAL: Floor timestamps to the minute to align X-axis
+    df['timestamp'] = df['timestamp'].dt.floor('min')
+
+    # 3. Get unique timestamps to find "Now" vs "Last Hour"
+    unique_times = sorted(df['timestamp'].unique(), reverse=True)
 
     st.subheader("Current Prices (vs Last Hour)")
-    cols = st.columns(len(latest_pull))
+    cols = st.columns(4) # Adjust if you have more/less than 4 coins
     
-    # .iterrows() now gives (coin_name, row_data)
+    # Get the latest data for each coin
+    latest_pull = df[df['timestamp'] == unique_times[0]].set_index('coin')
+
     for i, (coin_name, row) in enumerate(latest_pull.iterrows()):
         current_price = row['price']
+        delta_val = 0
         
-        try:
-            old_price = previous_pull.loc[coin_name]['price']
-            delta_percent = ((current_price - old_price) / old_price) * 100
-        except:
-            delta_percent = 0 # Fallback if only 1 data point exists
+        # Calculate delta against the previous scrape
+        if len(unique_times) > 1:
+            prev_time = unique_times[1]
+            prev_data = df[(df['timestamp'] == prev_time) & (df['coin'] == coin_name)]
+            if not prev_data.empty:
+                old_price = prev_data.iloc[0]['price']
+                delta_val = ((current_price - old_price) / old_price) * 100
 
-        cols[i].metric(
-            label=coin_name.upper(), 
-            value=f"${current_price:,.2f}",
-            delta=f"{delta_percent:.2f}% (1h)"
-        )
+        if i < len(cols):
+            cols[i].metric(
+                label=coin_name.upper(), 
+                value=f"${current_price:,.2f}",
+                delta=f"{delta_val:.2f}%"
+            )
 
-    st.subheader("Price Fluctuations (Last 24 Hours)")
-    # Pivot the data so each coin has its own line
-    chart_data = df.pivot_table(index='timestamp', columns='coin', values='price')
-    st.line_chart(chart_data)
+    # 4. Line Chart (Last 24 Hours)
+    st.subheader("Price Fluctuations (History)")
+    # pivot_table connects the dots because coins now share timestamp values
+    chart_df = df.pivot_table(index='timestamp', columns='coin', values='price', aggfunc='mean')
+    st.line_chart(chart_df)
+
 else:
-    st.warning("Waiting for more data... Please run your GitHub Action twice to see the arrows and chart!")
+    st.warning("No data found. Ensure your GitHub Action has run successfully.")
