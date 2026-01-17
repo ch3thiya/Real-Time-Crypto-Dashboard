@@ -4,7 +4,6 @@ import altair as alt
 
 st.set_page_config(page_title="2026 Crypto Tracker", layout="wide", page_icon="🪙")
 
-# --- HEADER SECTION ---
 st.title("🪙 Real-Time Crypto Pipeline")
 
 try:
@@ -15,20 +14,15 @@ except Exception as e:
     st.stop()
 
 if not df.empty:
-    # 1. RENAME & CLEAN DATA
     df['coin'] = df['coin'].replace({'binancecoin': 'bnb'})
     df['price'] = pd.to_numeric(df['price'], errors='coerce')
     df['timestamp'] = pd.to_datetime(df['timestamp'])
 
-    # 2. EXTRACT LAST SCRAPE TIME
-    # We get the raw timestamp before flooring for maximum accuracy in the label
     last_scrape_raw = df['timestamp'].max()
     st.caption(f"🕒 **Last Scrape:** {last_scrape_raw.strftime('%Y-%m-%d %H:%M:%S')} UTC")
 
-    # Floor for chart alignment
     df['timestamp'] = df['timestamp'].dt.floor('min')
 
-    # 3. CALCULATE METRICS
     unique_times = sorted(df['timestamp'].unique(), reverse=True)
     latest_pull = df[df['timestamp'] == unique_times[0]].set_index('coin')
 
@@ -56,7 +50,6 @@ if not df.empty:
     st.divider()
     st.subheader("Coin Fluctuations (Detailed View)")
 
-    # 4. 4 COLUMNS IN 1 ROW
     chart_cols = st.columns(4, gap="large")
     coins = sorted(df['coin'].unique())
 
