@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import altair as alt
 
 st.set_page_config(page_title="2026 Crypto Tracker", layout="wide", page_icon="🪙")
 st.title("🪙 Real-Time Crypto Pipeline")
@@ -39,26 +40,35 @@ if not df.empty:
             delta=f"{delta_val:.2f}%"
         )
 
-    st.divider()
+st.divider()
+st.subheader("Individual Coin Fluctuations (Detailed View)")
 
-    st.subheader("Individual Coin Fluctuations")
-    
-    row1_col1, row1_col2 = st.columns(2)
-    row2_col1, row2_col2 = st.columns(2)
-    chart_containers = [row1_col1, row1_col2, row2_col1, row2_col2]
+# Create two rows of two columns
+row1_col1, row1_col2 = st.columns(2)
+row2_col1, row2_col2 = st.columns(2)
+chart_containers = [row1_col1, row1_col2, row2_col1, row2_col2]
 
-    coins = sorted(df['coin'].unique()) # ['binancecoin', 'ethereum', 'litecoin', 'solana']
+coins = sorted(df['coin'].unique())
 
-    for i, coin in enumerate(coins):
-        with chart_containers[i]:
-            st.markdown(f"### {coin.upper()}")
-            coin_df = df[df['coin'] == coin].sort_values('timestamp')
-            
-            st.line_chart(
-                coin_df.set_index('timestamp')['price'], 
-                height=250,
-                use_container_width=True
-            )
+for i, coin in enumerate(coins):
+    with chart_containers[i]:
+        st.markdown(f"### {coin.upper()}")
+        coin_df = df[df['coin'] == coin].sort_values('timestamp')
+        
+        # Using Altair for the "Zero=False" fix
+        chart = alt.Chart(coin_df).mark_line(
+            color="#00ff00", # Neon green line
+            strokeWidth=3
+        ).encode(
+            x=alt.X('timestamp:T', title='Time'),
+            y=alt.Y('price:Q', 
+                    title='Price (USD)', 
+                    scale=alt.Scale(zero=False) # THIS FIXES THE FLAT LINE
+            ),
+            tooltip=['timestamp', 'price']
+        ).properties(height=250)
+        
+        st.altair_chart(chart, use_container_width=True)
 
 else:
     st.warning("No data found. Ensure GitHub Action is running successfully.")
