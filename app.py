@@ -3,6 +3,8 @@ import pandas as pd
 import altair as alt
 
 st.set_page_config(page_title="2026 Crypto Tracker", layout="wide", page_icon="🪙")
+
+# --- HEADER SECTION ---
 st.title("🪙 Real-Time Crypto Pipeline")
 
 try:
@@ -13,20 +15,30 @@ except Exception as e:
     st.stop()
 
 if not df.empty:
+    # 1. RENAME & CLEAN DATA
+    df['coin'] = df['coin'].replace({'binancecoin': 'bnb'})
     df['price'] = pd.to_numeric(df['price'], errors='coerce')
     df['timestamp'] = pd.to_datetime(df['timestamp'])
+
+    # 2. EXTRACT LAST SCRAPE TIME
+    # We get the raw timestamp before flooring for maximum accuracy in the label
+    last_scrape_raw = df['timestamp'].max()
+    st.caption(f"🕒 **Last Scrape:** {last_scrape_raw.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+
+    # Floor for chart alignment
     df['timestamp'] = df['timestamp'].dt.floor('min')
 
+    # 3. CALCULATE METRICS
     unique_times = sorted(df['timestamp'].unique(), reverse=True)
     latest_pull = df[df['timestamp'] == unique_times[0]].set_index('coin')
 
     st.subheader("Current Prices (vs Last Scrape)")
-    metric_cols = st.columns(4)
-    
+    metric_cols = st.columns(len(latest_pull), gap="large")
+
     for i, (coin_name, row) in enumerate(latest_pull.iterrows()):
         current_price = row['price']
         delta_val = 0
-        
+
         if len(unique_times) > 1:
             prev_time = unique_times[1]
             prev_data = df[(df['timestamp'] == prev_time) & (df['coin'] == coin_name)]
@@ -34,41 +46,36 @@ if not df.empty:
                 old_price = prev_data.iloc[0]['price']
                 delta_val = ((current_price - old_price) / old_price) * 100
 
-        metric_cols[i].metric(
-            label=coin_name.upper(), 
-            value=f"${current_price:,.2f}",
-            delta=f"{delta_val:.2f}%"
-        )
+        with metric_cols[i]:
+            st.metric(
+                label=coin_name.upper(),
+                value=f"${current_price:,.2f}",
+                delta=f"{delta_val:.2f}%"
+            )
 
-st.divider()
-st.subheader("Individual Coin Fluctuations (Detailed View)")
+    st.divider()
+    st.subheader("Coin Fluctuations (Detailed View)")
 
-# Create two rows of two columns
-row1_col1, row1_col2 = st.columns(2)
-row2_col1, row2_col2 = st.columns(2)
-chart_containers = [row1_col1, row1_col2, row2_col1, row2_col2]
+    # 4. 4 COLUMNS IN 1 ROW
+    chart_cols = st.columns(4, gap="large")
+    coins = sorted(df['coin'].unique())
 
-coins = sorted(df['coin'].unique())
+    for i, coin in enumerate(coins):
+        if i < len(chart_cols):
+            with chart_cols[i]:
+                st.markdown(f"### {coin.upper()}")
+                coin_df = df[df['coin'] == coin].sort_values('timestamp')
 
-for i, coin in enumerate(coins):
-    with chart_containers[i]:
-        st.markdown(f"### {coin.upper()}")
-        coin_df = df[df['coin'] == coin].sort_values('timestamp')
-        
-        # Using Altair for the "Zero=False" fix
-        chart = alt.Chart(coin_df).mark_line(
-            color="#00ff00", # Neon green line
-            strokeWidth=3
-        ).encode(
-            x=alt.X('timestamp:T', title='Time'),
-            y=alt.Y('price:Q', 
-                    title='Price (USD)', 
-                    scale=alt.Scale(zero=False) # THIS FIXES THE FLAT LINE
-            ),
-            tooltip=['timestamp', 'price']
-        ).properties(height=250)
-        
-        st.altair_chart(chart, use_container_width=True)
+                chart = alt.Chart(coin_df).mark_line(
+                    color="#00ff00",
+                    strokeWidth=3
+                ).encode(
+                    x=alt.X('timestamp:T', title='Time'),
+                    y=alt.Y('price:Q', title='Price (USD)', scale=alt.Scale(zero=False)),
+                    tooltip=['timestamp', 'price']
+                ).properties(height=250)
+
+                st.altair_chart(chart, use_container_width=True)
 
 else:
     st.warning("No data found. Ensure GitHub Action is running successfully.")
