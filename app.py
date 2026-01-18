@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+from datetime import timedelta
 
-st.set_page_config(page_title="2026 Crypto Tracker", layout="wide", page_icon="🪙")
+st.set_page_config(page_title="Crypto Tracker", layout="wide", page_icon="⚡")
 
 st.title("🪙 Real Time Crypto Pipeline")
 
