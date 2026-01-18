@@ -18,8 +18,9 @@ if not df.empty:
     df['price'] = pd.to_numeric(df['price'], errors='coerce')
     df['timestamp'] = pd.to_datetime(df['timestamp'])
 
-    last_scrape_raw = df['timestamp'].max()
-    st.caption(f"🕒 **Last Scrape:** {last_scrape_raw.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    last_scrape_utc = df['timestamp'].max()
+    last_scrape_local = last_scrape_utc + timedelta(hours=5, minutes=30)
+    st.caption(f"🕒 **Last Scrape:** {last_scrape_local.strftime('%Y-%m-%d %H:%M:%S')} (GMT+5:30)")
 
     df['timestamp'] = df['timestamp'].dt.floor('min')
 
