@@ -5,7 +5,7 @@ from datetime import timedelta
 
 st.set_page_config(page_title="Crypto Tracker", layout="wide", page_icon="⚡")
 
-st.title("🪙 Real Time Crypto Pipeline")
+st.title("🪙 Real Time Crypto Data Pipeline")
 
 try:
     conn = st.connection("postgresql", type="sql")
