@@ -4,7 +4,7 @@ import altair as alt
 
 st.set_page_config(page_title="2026 Crypto Tracker", layout="wide", page_icon="🪙")
 
-st.title("🪙 Real-Time Crypto Pipeline")
+st.title("🪙 Real Time Crypto Pipeline")
 
 try:
     conn = st.connection("postgresql", type="sql")
